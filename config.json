@@ -1,0 +1,8 @@
+{
+    "development" : {
+        "port" : 8080,
+        "soundCloud" : {
+            "clientId" : "bbacf93a8a6df7bcc316f882ba0e7715"
+        }
+    }
+}
