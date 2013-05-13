@@ -26,6 +26,7 @@
          */
 
         DodgeBeat.prototype.init = function (parent) {
+            this.time = 0;
             this.parent = parent;
             this.initScene()
                 .initVisualizers()
@@ -119,12 +120,14 @@
 
             if (this.paused) { return; }
 
-            this.visualizers.cubes.update(t);
-            this.visualizers.particles.update(t);
-            this.visualizers.lights.update(t);
-            this.camera.position.x = Math.cos(t / moveRate) * moveDist;
-            this.camera.position.y = Math.sin(t / moveRate) * moveDist;
-            this.camera.rotation.z = Math.cos(t / moveRate / 8) * Math.sin(t / moveRate) / 3;
+            this.time += 1000 / 60;
+
+            this.visualizers.cubes.update(this.time);
+            this.visualizers.particles.update(this.time);
+            this.visualizers.lights.update(this.time);
+            this.camera.position.x = Math.cos(this.time / moveRate) * moveDist;
+            this.camera.position.y = Math.sin(this.time / moveRate) * moveDist;
+            this.camera.rotation.z = Math.cos(this.time / moveRate / 8) * Math.sin(this.time / moveRate) / 3;
 
             this.renderer.clear();
             this.renderer.render(this.scene, this.camera);
@@ -156,9 +159,6 @@
                 this.started = true;
                 this.paused = false;
                 this.dancer.play();
-                if (this.parent && this.parent.onStarted) {
-                    this.parent.onStarted();
-                }
             }
             return this;
         };
@@ -189,9 +189,6 @@
             this.ready = false;
             this.started = false;
             this.paused = false;
-            if (this.parent && this.parent.onStopped) {
-                this.parent.onStopped();
-            }
         };
 
         /**
@@ -215,6 +212,9 @@
 
         DodgeBeat.prototype.onEnded = function () {
             this.stop();
+            if (this.parent && this.parent.onEnded) {
+                this.parent.onEnded();
+            }
         };
 
         /**
@@ -248,7 +248,6 @@
 
             this.renderer.setSize(window.innerWidth, window.innerHeight, false);
         };
-
 
         return DodgeBeat;
 

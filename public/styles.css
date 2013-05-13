@@ -21,6 +21,24 @@ canvas {
     top: 0;
 }
 
+/* Anchors */
+
+a:link {
+    COLOR: #84c8ed;
+}
+
+a:visited {
+    COLOR: #5881a8;
+}
+
+a:hover {
+    COLOR: #FFA500;
+}
+
+a:active {
+    COLOR: #84c8ed;
+}
+
 /* Positions */
 
 .left {
@@ -43,17 +61,20 @@ header {
     overflow: hidden;
     vertical-align: text-top;
     margin: 1em auto 0 auto;
-    height: 7em !important;
+    height: 10em !important;
     width: 100%;
     z-index: 1;
+}
+
+header .title {
     font-family: 'LeagueGothicRegular', Lucida Sans Unicode, Lucida Grande, sans-serif;
+    font-size: 1.5em;
 }
 
 header h1 {
     float: left;
     margin-top: 0.25em;
     margin-bottom: -0.50em;
-    font-size: 3em;
 }
 
 header span {
@@ -72,14 +93,44 @@ header .center {
 
 @media screen and (max-width: 675px) {
     header {
-        height: 11em !important;
+        height: 14em !important;
     }
+}
+
+.nowPlaying {
+    padding-top: 0.5em;
+    clear: both;
+}
+
+.nowPlaying a {
+    vertical-align: middle;
+}
+
+.nowPlaying span {
+    vertical-align: middle;
+}
+
+.playControl {
+    height: 2em;
+    width: 2em;
+    display: inline-block;
+    background-repeat: no-repeat;
+    background-size: 2em 2em;
+    vertical-align: middle;
+}
+
+.playControl.playing {
+    background-image: url("images/btn_pause.png");
+}
+
+.playControl.paused {
+    background-image: url("images/btn_play.png");
 }
 
 /* Main Site */
 
 #main {
-    padding-top: 7.5em;
+    padding-top: 10em;
     height: 100%;
     position: relative;
     box-sizing:border-box;
@@ -87,7 +138,7 @@ header .center {
 
 @media screen and (max-width: 675px) {
     #main {
-        padding-top: 11em;
+        padding-top: 14.5em;
     }
 }
 
@@ -105,7 +156,7 @@ header .center {
 
 #searchQuery {
     height: 2em;
-    width: 29em;
+    width: 28em;
     position: relative;
     left: 1.7em;
 }
@@ -122,6 +173,10 @@ header .center {
     left: -0.75em;
 }
 
+#searchShowHide {
+    float: right;
+    padding-top: 0.5em;
+}
 
 /* Search Results */
 
@@ -136,6 +191,10 @@ header .center {
     height: 100%;
     min-height: 5em;
     overflow: auto;
+}
+
+.searchResults.empty {
+    margin-top: 3em;
 }
 
 .searchResultItem {

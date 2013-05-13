@@ -2,12 +2,8 @@
     {{#each tracks}}
         <div class="searchResultItem" data-index="{{index}}">
             <div class="left">
-                {{#artwork_url}}
-                    <img src="{{artwork_url}}"/>
-                {{/artwork_url}}
-                {{^artwork_url}}
-                    <img src="/images/missing_artwork.png"/>
-                {{/artwork_url}}
+                <img {{#artwork_url}}src="{{.}}"{{/artwork_url}}
+                     {{^artwork_url}}src="/images/missing_artwork.png"{{/artwork_url}}/>
             </div>
             <div>
                 <h4>{{title}}</h4>

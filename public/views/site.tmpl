@@ -1,15 +1,23 @@
 <header>
     <div class="center">
         <h1>
-            DodgeBEAT<img src="images/powered_by.png" />
-            <br/><span>Created by Michael Good</span>
+            <span class="title">DodgeBEAT</span>
+            <a href="https://soundcloud.com/stream" target="_blank"><img src="images/powered_by.png" /></a>
+            <br/>
+            <span class="credit">Created by Michael Good -
+                <a href="https://github.com/archcomet/DodgeBeat" target="_blank">github</a>
+            </span>
         </h1>
+
         <form id="searchForm">
             <img id="soundOnOff" src="images/sound-on.gif"/>
             <label for="searchQuery"></label>
             <input id="searchQuery" type="text" placeholder="Search SoundCloud..."/>
-            <input id="searchButton" type="submit" src="images/search_icon_small.png" />
+            <input id="searchButton" type="submit" src="images/search_icon_small.png" /><br/>
+            <a id="searchShowHide"></a>
         </form>
+
+        <div id="nowPlayingContainer"></div>
     </div>
 </header>
 

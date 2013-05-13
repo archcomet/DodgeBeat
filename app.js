@@ -60,7 +60,8 @@
 
             track.stream(function (err, steam) {
                 if (err) {
-                    throw new Error(err);
+                    console.log(err);
+                    return;
                 }
                 steam.pipe(converter.process.stdin);
                 converter.process.stdout.pipe(res);

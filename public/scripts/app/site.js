@@ -8,7 +8,8 @@
 
         init : function (elem, options) {
             this.searchResults = null;
-            this.element.html(can.view('/views/site.tmpl', {}));
+            this.element.hide().html(can.view('/views/site.tmpl', {})).fadeIn();
+            this.$nowPlayingContainer = can.$('#nowPlayingContainer');
             return this;
         },
 
@@ -18,27 +19,58 @@
         },
 
         play: function (track) {
+            this.currentTrack = track;
             this.hideSearchResults();
             this.showLoadSpinner();
             this.dodgeBeat.stream(track);
             return this;
         },
 
+        pause: function () {
+            if (this.playing) {
+                this.dodgeBeat.pause();
+            }
+        },
+
+        resume: function () {
+            if (this.playing) {
+                this.dodgeBeat.play();
+            } else {
+                this.play(this.currentTrack);
+            }
+        },
+
         onReady: function (callback) {
+            this.playing = true;
+            this.showNowPlaying();
             this.hideLoadSpinner(function () {
                 callback();
             });
             return this;
         },
 
-        onStarted: function () {
-            console.log('started');
+        onEnded: function () {
+            if (!this.searchResults.next()) {
+                this.nowPlaying.showPlayButton();
+                this.playing = false;
+            }
             return this;
         },
 
-        onStopped: function () {
-            console.log('stopped');
-            return this;
+        showNowPlaying: function () {
+            if (this.nowPlaying && this.nowPlaying.track === this.currentTrack) {
+                return;
+            }
+
+            if (this.nowPlaying) {
+                this.nowPlaying.destroy();
+                this.nowPlaying = null;
+            }
+
+            this.nowPlaying = new app.NowPlayingControl(this.$nowPlayingContainer, {
+                track: this.currentTrack,
+                parent: this
+            });
         },
 
         showLoadSpinner: function (callback) {
@@ -52,13 +84,11 @@
         },
 
         search: function (query) {
-            this.hideSearchResults();
-
             if (query === '') {
                 return this;
             }
-
             this.showLoadSpinner();
+            this.removeSearchResults();
             this.searchResults = new app.SearchResultsControl('#searchContainer', {
                 q: query,
                 parent: this
@@ -66,17 +96,51 @@
             return this;
         },
 
+        onSearchResultsFound: function (callback) {
+            this.hideLoadSpinner(callback);
+            this.searchResultsVisible = true;
+            can.$('#searchShowHide').html('hide results');
+        },
+
+        showSearchResults: function () {
+            if (this.searchResults) {
+                this.searchResults.element.show();
+                this.searchResults.showResults();
+                this.searchResultsVisible = true;
+                can.$('#searchShowHide').html('hide results');
+            }
+        },
+
         hideSearchResults: function () {
             if (this.searchResults) {
+                this.searchResults.element.hide();
+                this.searchResultsVisible = false;
+                can.$('#searchShowHide').html('show results');
+            }
+        },
+
+        removeSearchResults: function () {
+            can.$('#searchShowHide').html('');
+            if (this.searchResults) {
+                var element = this.searchResults.element;
                 this.searchResults.element.empty();
                 this.searchResults.destroy();
                 this.searchResults = null;
+                element.show();
             }
         },
 
         '#searchForm submit' : function () {
             this.search(can.$('#searchQuery').val());
             return false;
+        },
+
+        '#searchShowHide click' : function (link) {
+            if (this.searchResultsVisible) {
+                this.hideSearchResults();
+            } else {
+                this.showSearchResults();
+            }
         }
 
      });

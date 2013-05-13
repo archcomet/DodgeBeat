@@ -10,7 +10,9 @@
             '/scripts/app/config.js',
             '/scripts/app/site.js',
             '/scripts/app/search.js',
-            '/scripts/app/track.js'
+            '/scripts/app/track.js',
+            '/scripts/app/playing.js',
+            'css!styles.css'
         ],
         complete: function () {
             global.site = new global.app.SiteControl(document.body);
