@@ -26,8 +26,8 @@
             fov: 75,
             near: 1,
             far: 4000,
-            depth: 2000, // deprecated
-            range: 1500, // deprecated
+            depth: 2000,
+            range: 1500,
             movePeriod: 4000,
             moveDistance: 500,
             maxVelocity: 5

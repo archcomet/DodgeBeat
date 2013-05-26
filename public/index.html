@@ -2,10 +2,33 @@
 <html lang='en'>
     <head>
         <title>Dodge Beat test</title>
-        <link rel="stylesheet" href="styles.css"/>
         <script type="text/javascript" src="scripts/libs/yepnope.1.5.4-min.js"></script>
+
+        <script type="x-shader/x-vertex" id="sizeColorVertexShader">
+            attribute float size;
+            attribute vec3 pcolor;
+            varying vec3 vColor;
+
+            void main() {
+                vColor = pcolor;
+                vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+                gl_PointSize = size * ( 200.0 / length( mvPosition.xyz ) );
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        </script>
+
+        <script type="x-shader/x-fragment" id="sizeColorFragmentShader">
+            uniform sampler2D texture;
+            varying vec3 vColor;
+
+            void main() {
+                vec4 outColor = texture2D( texture, gl_PointCoord );
+                gl_FragColor = outColor * vec4( vColor, 1.0 );
+            }
+        </script>
+
     </head>
     <body>
-        <script type="text/javascript" src="scripts/app.js"></script>
+        <script type="text/javascript" src="scripts/loader.js"></script>
     </body>
 </html>

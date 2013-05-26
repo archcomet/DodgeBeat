@@ -22,10 +22,10 @@
 
         /**
          * init
-         * @param scene
+         * @param parent
          */
 
-        ParticleVisualizer.prototype.init = function (scene) {
+        ParticleVisualizer.prototype.init = function (parent) {
             Visualizer.prototype.init.apply(this, arguments);
 
             var i, n, pX, pY, pZ, depth, range;
@@ -33,7 +33,7 @@
             depth = global.DodgeBeat.config.camera.depth;
             range = global.DodgeBeat.config.camera.range;
 
-            this.scene = scene;
+            this.parent = parent;
             this.particles = new THREE.Geometry();
             this.particles.colors = [];
 
@@ -70,14 +70,13 @@
 
             this.particleSystem.dynamic = true;
             this.particleSystem.sortParticles = true;
-            this.scene.add(this.particleSystem);
+            this.parent.scene.add(this.particleSystem);
         };
 
         ParticleVisualizer.prototype.update = function (t) {
-            var i, n, particle, depth, velocity, maxSize;
+            var i, n, particle, depth, maxSize;
 
             depth = global.DodgeBeat.config.camera.depth;
-            velocity = global.DodgeBeat.config.camera.maxVelocity;
             maxSize = global.DodgeBeat.config.particles.maxSize;
 
             for (i = 0, n = global.DodgeBeat.config.particles.count; i < n; i++) {
@@ -85,7 +84,7 @@
                 if (particle.z >= depth) {
                     particle.z -= 2 * depth;
                 }
-                particle.z += velocity;
+                particle.z += this.parent.velocity;
             }
 
             if (this.kicks.peak) {

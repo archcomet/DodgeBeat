@@ -9,11 +9,11 @@
 
         /**
          * LightVisualizer
-         * @param scene
+         * @param parent
          * @returns {*}
          * @constructor
          */
-        function LightVisualizer(scene) {
+        function LightVisualizer(parent) {
             return LightVisualizer.alloc(this, arguments);
         }
 
@@ -21,15 +21,15 @@
 
         /**
          * init
-         * @param scene
+         * @param parent
          */
 
-        LightVisualizer.prototype.init = function (scene) {
+        LightVisualizer.prototype.init = function (parent) {
             Visualizer.prototype.init.apply(this, arguments);
 
             var depth = global.DodgeBeat.config.camera.depth;
 
-            this.scene = scene;
+            this.parent = parent;
             this.loadTextures();
 
             this.faintSun = this.addLight({
@@ -129,8 +129,8 @@
                 lensFlare.lensFlares[i].maxSize = lensFlare.lensFlares[i].size;
             }
 
-            this.scene.add(lensFlare);
-            this.scene.add(light);
+            this.parent.scene.add(lensFlare);
+            this.parent.scene.add(light);
 
             return {
                 light: light,

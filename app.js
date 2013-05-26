@@ -7,9 +7,9 @@
         http = require('http'),
         url = require('url'),
         path = require('path'),
-        config = require('./libs/config.js'),
-        Track = require('./libs/track'),
-        Converter = require('./libs/converter.js'),
+        config = require('./scripts/config.js'),
+        Track = require('./scripts/track'),
+        Converter = require('./scripts/converter.js'),
 
         // Application setup
         app = express(),
@@ -61,6 +61,7 @@
             track.stream(function (err, steam) {
                 if (err) {
                     console.log(err);
+                    res.send(503, err);
                     return;
                 }
                 steam.pipe(converter.process.stdin);

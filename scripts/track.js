@@ -86,35 +86,6 @@
             return this.attributes.id;
         };
 
-        Track.prototype.id = function () {
-            return this.attributes.id;
-        };
-
-        Track.prototype.title = function () {
-            return this.attributes.title;
-        };
-
-        Track.prototype.artistName = function () {
-            return this.attributes.artistName || this.attributes.artist_name;
-        };
-
-        Track.prototype.asJSON = function () {
-            return {
-                id: this.id(),
-                title: this.title(),
-                artistName: this.artistName()
-            };
-        };
-
-        Track.prototype.openImage = function (cb) {
-            var readStream = fs.createReadStream(this.imagePath());
-            cb(readStream);
-        };
-
-        Track.prototype.imagePath = function () {
-            return path.join(__dirname, '..', 'uploads', this.id() + '.png');
-        };
-
         return Track;
 
     }());

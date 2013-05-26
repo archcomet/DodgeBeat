@@ -3,8 +3,7 @@
     'use strict';
 
     var THREE = global.THREE,
-        Dancer = global.Dancer,
-        Base = global.Base;
+        Dancer = global.Dancer;
 
     global.DodgeBeat = (function () {
 
@@ -27,10 +26,12 @@
 
         DodgeBeat.prototype.init = function (parent) {
             this.time = 0;
+            this.velocity = 0;
             this.parent = parent;
             this.initScene()
                 .initVisualizers()
                 .initAudio()
+                .initPlayer()
                 .update(0);
 
             return this;
@@ -47,13 +48,12 @@
                 fogColor = DodgeBeat.config.scene.fogColor,
                 fogRate = DodgeBeat.config.scene.fogRate;
 
-            this.camera = new THREE.PerspectiveCamera();
-            this.camera.position = new THREE.Vector3(0, 0, depth);
             this.scene = new THREE.Scene();
-            this.scene.add(this.camera);
             this.scene.fog = new THREE.FogExp2(fogColor, fogRate);
 
-            this.renderer = new THREE.WebGLRenderer();
+            this.camera = new DodgeBeat.Camera(this);
+
+            this.renderer = new THREE.WebGLRenderer({antialias: true });
             $(document.body).prepend(this.renderer.domElement);
 
             $(window).resize(this.onWindowResize.bind(this));
@@ -70,9 +70,9 @@
 
         DodgeBeat.prototype.initVisualizers = function () {
             this.visualizers = {
-                cubes: new DodgeBeat.CubeVisualizer(this.scene),
-                particles: new DodgeBeat.ParticleVisualizer(this.scene),
-                lights: new DodgeBeat.LightVisualizer(this.scene)
+                cubes: new DodgeBeat.CubeVisualizer(this),
+                particles: new DodgeBeat.ParticleVisualizer(this),
+                lights: new DodgeBeat.LightVisualizer(this)
             };
             return this;
         };
@@ -106,31 +106,10 @@
             return this;
         };
 
-        /**
-         * update (requestAnimationFrame)
-         * Main loop for visualizers
-         * @param t
-         */
-
-        DodgeBeat.prototype.update = function (t) {
-            window.requestAnimationFrame(this.update.bind(this));
-
-            var moveRate = DodgeBeat.config.camera.movePeriod,
-                moveDist = DodgeBeat.config.camera.moveDistance;
-
-            if (this.paused) { return; }
-
-            this.time += 1000 / 60;
-
-            this.visualizers.cubes.update(this.time);
-            this.visualizers.particles.update(this.time);
-            this.visualizers.lights.update(this.time);
-            this.camera.position.x = Math.cos(this.time / moveRate) * moveDist;
-            this.camera.position.y = Math.sin(this.time / moveRate) * moveDist;
-            this.camera.rotation.z = Math.cos(this.time / moveRate / 8) * Math.sin(this.time / moveRate) / 3;
-
-            this.renderer.clear();
-            this.renderer.render(this.scene, this.camera);
+        DodgeBeat.prototype.initPlayer = function () {
+            this.player = new DodgeBeat.Player(this);
+            this.camera.tracking = this.player.steering.position;
+            return this;
         };
 
         /**
@@ -143,6 +122,8 @@
         DodgeBeat.prototype.stream = function (track) {
             this.stop();
             this.currentAudio = new Audio(track.src());
+            this.currentAudio.onerror = this.onError.bind(this,
+                'Error encountered with audio stream. Please try again!');
             $(this.currentAudio).on('ended', this.onEnded.bind(this));
             this.dancer.load(this.currentAudio);
             return this;
@@ -183,8 +164,11 @@
          */
 
         DodgeBeat.prototype.stop = function () {
-            $(this.currentAudio).attr('src', '');
-            $(this.currentAudio).unbind();
+            if (this.currentAudio) {
+                this.currentAudio.onerror = null;
+                $(this.currentAudio).attr('src', '');
+                $(this.currentAudio).unbind();
+            }
             this.dancer.load({});
             this.ready = false;
             this.started = false;
@@ -202,6 +186,13 @@
                 this.parent.onReady(this.play.bind(this));
             } else {
                 this.play();
+            }
+        };
+
+        DodgeBeat.prototype.onError = function (error) {
+            this.ready = false;
+            if (this.parent && this.parent.onError) {
+                this.parent.onError(error);
             }
         };
 
@@ -240,13 +231,41 @@
          */
 
         DodgeBeat.prototype.onWindowResize = function () {
-            this.camera.fov = DodgeBeat.config.camera.fov;
-            this.camera.aspect = window.innerWidth / window.innerHeight;
-            this.camera.near = DodgeBeat.config.camera.near;
-            this.camera.far = DodgeBeat.config.camera.depth * -2;
-            this.camera.updateProjectionMatrix();
-
+            this.camera.onWindowResize();
             this.renderer.setSize(window.innerWidth, window.innerHeight, false);
+        };
+
+
+        /**
+         * update (requestAnimationFrame)
+         * Main loop for visualizers
+         * @param t
+         */
+
+        DodgeBeat.prototype.update = function (t) {
+            window.requestAnimationFrame(this.update.bind(this));
+
+            if (this.paused) { return; }
+
+            this.time += 1000 / 60;
+            this.velocity = 0;
+
+            TWEEN.update(this.time);
+
+            this.player.update(this.time);
+            this.camera.update(this.time);
+
+            this.visualizers.cubes.update(this.time);
+            this.visualizers.particles.update(this.time);
+            this.visualizers.lights.update(this.time);
+
+            this.renderer.clear();
+            this.renderer.render(this.scene, this.camera.perspectiveCam);
+        };
+
+        DodgeBeat.prototype.updatePhase = function (t) {
+
+
         };
 
         return DodgeBeat;

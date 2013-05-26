@@ -20,8 +20,8 @@
 
         play: function (track) {
             this.currentTrack = track;
-            this.hideSearchResults();
-            this.showLoadSpinner();
+            this.removeError();
+            this.hideSearchResults(this.showLoadSpinner);
             this.dodgeBeat.stream(track);
             return this;
         },
@@ -47,6 +47,23 @@
                 callback();
             });
             return this;
+        },
+
+        onError: function (error) {
+            var self = this;
+            this.hideLoadSpinner(function () {
+                self.error = new app.ErrorControl('#errorContainer', {
+                    error: error
+                });
+            });
+        },
+
+        removeError: function () {
+            if (this.error) {
+                this.error.element.empty();
+                this.error.destroy();
+                this.error = null;
+            }
         },
 
         onEnded: function () {
@@ -87,6 +104,7 @@
             if (query === '') {
                 return this;
             }
+            this.removeError();
             this.showLoadSpinner();
             this.removeSearchResults();
             this.searchResults = new app.SearchResultsControl('#searchContainer', {
@@ -111,9 +129,9 @@
             }
         },
 
-        hideSearchResults: function () {
+        hideSearchResults: function (callback) {
             if (this.searchResults) {
-                this.searchResults.element.hide();
+                this.searchResults.element.fadeOut(callback);
                 this.searchResultsVisible = false;
                 can.$('#searchShowHide').html('show results');
             }

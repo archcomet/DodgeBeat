@@ -2,8 +2,6 @@
 (function (global) {
     'use strict';
 
-    var Base = global.Base;
-
     global.DodgeBeat.Visualizer = (function () {
 
         /**
