@@ -31,7 +31,7 @@
             this.position = new THREE.Vector3(0, 0, 2500);
             this.target = new THREE.Vector3(0, 0, 2500);
             this.contact = false;
-            this.enableCollision = false;
+            this.enableControl = false;
             this.color = new THREE.Color();
             this.steering = new DodgeBeat.Steering({
                 position: this.position,
@@ -40,7 +40,7 @@
                 slowingDistance: 600
             });
 
-            this.tailSize = 25;
+            this.tailSize = 50;
 
             this.createLight()
                 .createSphere()
@@ -160,7 +160,6 @@
                     .to({
                         x: particle.x + (Math.random() * 40 - 20) * scatter,
                         y: particle.y + (Math.random() * 40 - 20) * scatter,
-                        z: particle.z + 300 / scatter,
                         time: 0
                     }, particle.time)
                     .onUpdate(function () {
@@ -171,6 +170,7 @@
                             particle.color.g * t,
                             particle.color.b * t
                         );
+                        particle.z += self.parent.velocity;
                     })
                     .onComplete(function () {
                         tweenParticle(index);
@@ -223,26 +223,19 @@
         };
 
         /**
-         * setZ
-         * @param z
-         */
-
-        Player.prototype.setTargetZ = function (z) {
-            this.target.z = z;
-        };
-
-        /**
          * mousemove
          * @param event
          */
 
         Player.prototype.mousemove = function (event) {
-            var range = global.DodgeBeat.config.camera.range,
-                x = (event.pageX - window.innerWidth * 0.5) / (window.innerWidth * 0.5),
-                y = ((window.innerHeight - event.pageY) - window.innerHeight * 0.5) / (window.innerHeight * 0.5);
+            if (this.enableControl) {
+                var range = global.DodgeBeat.config.camera.range,
+                    x = (event.pageX - window.innerWidth * 0.5) / (window.innerWidth * 0.5),
+                    y = ((window.innerHeight - event.pageY) - window.innerHeight * 0.5) / (window.innerHeight * 0.5);
 
-            this.steering.target.x = x * range * 0.66;
-            this.steering.target.y = y * range * 0.66;
+                this.steering.target.x = x * range * 0.66;
+                this.steering.target.y = y * range * 0.66;
+            }
         };
 
         /**
@@ -252,6 +245,7 @@
 
         Player.prototype.update = function (t) {
             this.steering.update(t);
+            this.updateTarget();
 
             this.lines[0].rotation.y += 0.01;
             this.lines[0].rotation.x += 0.01;
@@ -260,11 +254,22 @@
 
             if (this.contact) {
                 this.contact = false;
-
-                if (this.enableCollision) {
+                if (this.enableControl) {
                     this.parent.camera.shakeUpdates = 30;
                     DodgeBeat.audio.play(collisionSounds);
                 }
+            }
+        };
+
+        Player.prototype.updateTarget = function () {
+            if (this.parent.velocity === 0) {
+                this.target.z = 2500;
+            } else {
+                this.target.z = 2050 - (150 * Math.log(this.parent.velocity + 1));
+            }
+            if (!this.enableControl) {
+                this.target.x = 0;
+                this.target.y = 0;
             }
         };
 

@@ -25,13 +25,16 @@
          */
 
         DodgeBeat.prototype.init = function (parent) {
+            this.warpFactor = 1.5;
             this.time = 0;
             this.velocity = 0;
             this.parent = parent;
+
             this.initScene()
                 .initVisualizers()
                 .initAudio()
                 .initPlayer()
+                .changePhase(0)
                 .update(0);
 
             return this;
@@ -44,16 +47,14 @@
          */
 
         DodgeBeat.prototype.initScene = function () {
-            var depth = DodgeBeat.config.camera.depth,
-                fogColor = DodgeBeat.config.scene.fogColor,
+            var fogColor = DodgeBeat.config.scene.fogColor,
                 fogRate = DodgeBeat.config.scene.fogRate;
 
             this.scene = new THREE.Scene();
             this.scene.fog = new THREE.FogExp2(fogColor, fogRate);
-
             this.camera = new DodgeBeat.Camera(this);
 
-            this.renderer = new THREE.WebGLRenderer({antialias: true });
+            this.renderer = new THREE.WebGLRenderer({antialias: false });
             $(document.body).prepend(this.renderer.domElement);
 
             $(window).resize(this.onWindowResize.bind(this));
@@ -89,6 +90,7 @@
             this.dancer = new Dancer();
             this.dancer.bind('loaded', this.onLoaded.bind(this));
             this.kicks = {};
+            this.kicksSorted = [];
 
             for (key in kicksConfig) {
                 if (kicksConfig.hasOwnProperty(key)) {
@@ -99,9 +101,15 @@
                         onKick: this.onKickEvent.bind(this, key, true),
                         offKick: this.onKickEvent.bind(this, key, false)
                     });
+                    this.kicks[key].active = -1;
                     this.kicks[key].on();
+                    this.kicksSorted.push(this.kicks[key]);
                 }
             }
+            this.kickLevel = -1;
+            this.kicksSorted.sort(function(a, b) {
+                return a.threshold - b.threshold;
+            });
 
             return this;
         };
@@ -140,6 +148,7 @@
                 this.started = true;
                 this.paused = false;
                 this.dancer.play();
+                this.changePhase(1);
             }
             return this;
         };
@@ -173,6 +182,7 @@
             this.ready = false;
             this.started = false;
             this.paused = false;
+            this.changePhase(0);
         };
 
         /**
@@ -218,6 +228,8 @@
 
         DodgeBeat.prototype.onKickEvent = function (kickName, on, mag) {
             var key;
+            this.kicks[kickName].mag = mag;
+            this.kicks[kickName].onBeat = on;
             for (key in this.visualizers) {
                 if (this.visualizers.hasOwnProperty(key)) {
                     this.visualizers[key].onKick(kickName, on, mag);
@@ -248,10 +260,10 @@
             if (this.paused) { return; }
 
             this.time += 1000 / 60;
-            this.velocity = 0;
 
             TWEEN.update(this.time);
-
+            this.updateAudioKicks(t);
+            this.updatePhase(t);
             this.player.update(this.time);
             this.camera.update(this.time);
 
@@ -263,10 +275,103 @@
             this.renderer.render(this.scene, this.camera.perspectiveCam);
         };
 
-        DodgeBeat.prototype.updatePhase = function (t) {
+        DodgeBeat.prototype.accelerate = function () {
 
+            console.log(this.targetVelocity);
+
+            if (this.velocity > this.targetVelocity) {
+                this.velocity -= this.acceleration * (this.kickLevel - 1);
+
+                if (this.velocity < this.targetVelocity) {
+                    this.velocity = this.targetVelocity;
+                    return false;
+                }
+            }
+
+            if (this.velocity < this.targetVelocity) {
+                this.velocity += this.acceleration * this.kickLevel;
+
+                if (this.velocity > this.targetVelocity) {
+                    this.velocity = this.targetVelocity;
+                    return true;
+                }
+            }
+
+            return true;
+        };
+
+        DodgeBeat.prototype.updateAudioKicks = function (t) {
+            var i, n, kick, kickLevel = 0;
+
+            for (i = 0, n = this.kicksSorted.length; i < n; i++) {
+                kick = this.kicksSorted[i];
+                if (kick.onBeat) {
+                    kickLevel = i;
+                }
+            }
+
+            kickLevel++;
+
+            if (this.kickLevel !== kickLevel) {
+                this.kickLevel = kickLevel;
+            }
+        };
+
+        DodgeBeat.prototype.updatePhase = function (t) {
+            switch (this.phase) {
+                // Pre-Flight
+                case 0:
+                    break;
+
+                // Launch
+                case 1:
+                    if (this.accelerate()) {
+                        this.changePhase(2);
+                    }
+                    break;
+
+                // nth Main
+                default:
+                    if (this.player.contact) {
+                        this.velocity = 2;
+                    }
+                    this.targetVelocity = (this.kickLevel * this.kickLevel) * this.warpFactor;
+
+                    this.accelerate();
+                    break;
+            }
 
         };
+
+        DodgeBeat.prototype.changePhase = function(phase) {
+
+            switch(phase) {
+                // Pre-Flight
+                case 0:
+                    this.velocity = 0;
+                    this.player.enableControl = false;
+                    this.phase = phase;
+                    break;
+
+                // Launch
+                case 1:
+                    if (this.phase === 0) {
+                        this.phase = phase;
+                    }
+                    this.targetVelocity = 2;
+                    this.acceleration = 0.1;
+                    break;
+
+                // Main
+                default:
+                    this.player.enableControl = true;
+                    this.phase = phase;
+                    break;
+            }
+
+            return this;
+        };
+
 
         return DodgeBeat;
 

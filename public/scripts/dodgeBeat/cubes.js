@@ -101,6 +101,7 @@
             }
         };
 
+
         CubeVisualizer.prototype.intersectsPlayer = function (mesh) {
 
             var dMin, boxMax, boxMin, rotationMatrix,

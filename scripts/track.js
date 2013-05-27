@@ -67,6 +67,7 @@
             http.get(optionsForRequest(this.id()), function (res) {
                 if (!res.headers.location) {
                     fn(['No stream url for track', self.id()].join(' '));
+                    return;
                 }
 
                 var location = url.parse(res.headers.location);

@@ -29,8 +29,7 @@
             depth: 2000,
             range: 1500,
             movePeriod: 4000,
-            moveDistance: 500,
-            maxVelocity: 5
+            moveDistance: 500
         },
 
         kicks: {
