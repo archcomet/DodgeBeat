@@ -2,10 +2,10 @@
 (function (global) {
     'use strict';
 
-    var THREE = global.THREE,
-        Visualizer = global.DodgeBeat.Visualizer;
-
     global.DodgeBeat.CubeVisualizer = (function () {
+
+        var CUBES = DodgeBeat.CONFIG.CUBES,
+            SCENE = DodgeBeat.CONFIG.SCENE;
 
         /**
          * CubeVisualizer
@@ -18,7 +18,7 @@
             return CubeVisualizer.alloc(this, arguments);
         }
 
-        Visualizer.inherit(CubeVisualizer);
+        DodgeBeat.Visualizer.inherit(CubeVisualizer);
 
         /**
          * init
@@ -26,21 +26,15 @@
          */
 
         CubeVisualizer.prototype.init = function (parent) {
-            Visualizer.prototype.init.apply(this, arguments);
+            DodgeBeat.Visualizer.prototype.init.apply(this, arguments);
 
-            var i, config, cube, material, mesh, cubeSize, cubeCount, range, depth;
-
-            config = global.DodgeBeat.config;
-            cubeSize = config.cubes.size;
-            cubeCount = config.cubes.count;
-            depth = config.camera.depth;
-            range = config.camera.range;
+            var i, cube, material, mesh;
 
             this.meshes = [];
             this.parent = parent;
-            this.sqrBoundingRadius = sqr(cubeSize) * 2;
+            this.sqrBoundingRadius = sqr(CUBES.SIZE) * 2;
 
-            cube = new THREE.CubeGeometry(cubeSize, cubeSize, cubeSize);
+            cube = new THREE.CubeGeometry(CUBES.SIZE, CUBES.SIZE, CUBES.SIZE);
             material = new THREE.MeshPhongMaterial({
                 ambient: 0x333333,
                 color: 0xffffff,
@@ -48,11 +42,11 @@
                 shininess: 50
             });
 
-            for (i = 0; i < cubeCount; i += 1) {
+            for (i = 0; i < CUBES.COUNT; i += 1) {
                 mesh = new THREE.Mesh(cube, material);
-                mesh.position.x = Math.random() * 2 * range - range;
-                mesh.position.y = Math.random() * 2 * range - range;
-                mesh.position.z = -depth + (i * (2 * depth) / cubeCount);
+                mesh.position.x = Math.random() * 2 * SCENE.WIDTH - SCENE.WIDTH;
+                mesh.position.y = Math.random() * 2 * SCENE.HEIGHT - SCENE.HEIGHT;
+                mesh.position.z = -(SCENE.LIMIT) + (i * (SCENE.LENGTH) / CUBES.COUNT);
 
                 mesh.rotation.x = Math.random() * Math.PI;
                 mesh.rotation.y = Math.random() * Math.PI;
@@ -74,21 +68,19 @@
         };
 
         CubeVisualizer.prototype.update = function (t) {
-            var i, n, mesh, velocity, depth;
-
-            velocity = this.parent.velocity;
-            depth = global.DodgeBeat.config.camera.depth;
+            var i, n, mesh, velocity = this.parent.velocity;
 
             for (i = 0, n = this.meshes.length; i < n; i += 1) {
                 mesh = this.meshes[i];
-                if (mesh.position.z >= depth) {
-                    mesh.position.z -= 2 * depth;
-                }
-
                 mesh.rotation.x += mesh.spin.x;
                 mesh.rotation.y += mesh.spin.y;
                 mesh.rotation.z += mesh.spin.z;
+
                 mesh.position.z += velocity;
+                if (mesh.position.z >= SCENE.LIMIT) {
+                    mesh.position.z -= SCENE.LENGTH;
+                    this.positionCube(mesh, t);
+                }
 
                 if (this.intersectsPlayer(mesh)) {
                     if (!mesh.contact) {
@@ -101,6 +93,86 @@
             }
         };
 
+        CubeVisualizer.prototype.positionCube = function (mesh, t) {
+            var x1, y1, s = (t - this.parent.lastPhaseChange) / (this.parent.nextPhaseChange - this.parent.lastPhaseChange);
+
+            var traveled = this.parent.traveled,
+                camera = this.parent.camera.position,
+                r1 = this.parent.r1,
+                r2 = this.parent.r2,
+                r3 = this.parent.r3,
+                r4 = this.parent.r4;
+
+            switch (this.parent.phase) {
+
+                // Wave Plane
+                case 5:
+                    mesh.position.x = (t * r1 % (SCENE.WIDTH * 2)) - SCENE.WIDTH;
+                    mesh.position.y = (Math.sin((mesh.position.x + t * 2) / (SCENE.WIDTH * r2)) * SCENE.HEIGHT * r3) +
+                                      (Math.sin(traveled/r4) * SCENE.HEIGHT * 0.1);
+
+                    mesh.rotation.x = 0;
+                    mesh.rotation.y = 0;
+                    mesh.rotation.z = 0;
+
+                    mesh.spin.x = 0;
+                    mesh.spin.y = 0;
+                    mesh.spin.z = 0;
+                    break;
+
+                // Funnel
+                case 4:
+                    s = 1 - s;
+                    x1 = camera.x + (Math.cos(traveled/r1) * SCENE.WIDTH * r2);
+                    y1 = camera.y + (Math.sin(traveled/r1) * SCENE.HEIGHT * r2);
+
+                    mesh.position.x = x1 + Math.cos(t) * SCENE.WIDTH * (0.1 + r3 * s);
+                    mesh.position.y = y1 + Math.sin(t) * SCENE.HEIGHT * (0.1 + r3 * s);
+
+                    mesh.rotation.x = 0;
+                    mesh.rotation.y = 0;
+                    mesh.rotation.z = t;
+
+                    mesh.spin.x = 0;
+                    mesh.spin.y = 0;
+                    mesh.spin.z = 0.01;
+
+                    break;
+
+                // Tunnel
+                case 3:
+                    x1 = camera.x + (Math.cos(traveled/r1) * SCENE.WIDTH * r2) * s;
+                    y1 = camera.y + (Math.sin(traveled/r1) * SCENE.HEIGHT * r2) * s;
+
+                    mesh.position.x = x1 + Math.cos(t) * SCENE.WIDTH * r3;
+                    mesh.position.y = y1 + Math.sin(t) * SCENE.HEIGHT * r3;
+
+                    mesh.rotation.x = 0;
+                    mesh.rotation.y = 0;
+                    mesh.rotation.z = t;
+
+                    mesh.spin.x = 0;
+                    mesh.spin.y = 0;
+                    mesh.spin.z = 0;
+
+                    break;
+
+                // Star Field
+                default:
+                    mesh.position.x = Math.random() * 2 * SCENE.WIDTH - SCENE.WIDTH;
+                    mesh.position.y = Math.random() * 2 * SCENE.HEIGHT - SCENE.HEIGHT;
+
+                    mesh.rotation.x = Math.random() * Math.PI;
+                    mesh.rotation.y = Math.random() * Math.PI;
+                    mesh.rotation.z = Math.random() * Math.PI;
+
+                    mesh.spin.x = Math.random() * (200 - 100) / 10000;
+                    mesh.spin.y = Math.random() * (200 - 100) / 10000;
+                    mesh.spin.z = Math.random() * (200 - 100) / 10000;
+
+                    break;
+            }
+        };
 
         CubeVisualizer.prototype.intersectsPlayer = function (mesh) {
 
@@ -125,23 +197,14 @@
             dMin = 0;
 
             // calculate squared Euclidean distance
-            if (offset.x < boxMin.x) {
-                dMin += sqr(offset.x - boxMin.x);
-            } else if (offset.x > boxMax.x) {
-                dMin += sqr(offset.x - boxMax.x);
-            }
+            if (offset.x < boxMin.x) { dMin += sqr(offset.x - boxMin.x); } else
+            if (offset.x > boxMax.x) { dMin += sqr(offset.x - boxMax.x); }
 
-            if (offset.y < boxMin.y) {
-                dMin += sqr(offset.y - boxMin.y);
-            } else if (offset.y > boxMax.y) {
-                dMin += sqr(offset.y - boxMax.y);
-            }
+            if (offset.y < boxMin.y) { dMin += sqr(offset.y - boxMin.y); } else
+            if (offset.y > boxMax.y) { dMin += sqr(offset.y - boxMax.y); }
 
-            if (offset.z < boxMin.z) {
-                dMin += sqr(offset.z - boxMin.z);
-            } else if (offset.x > boxMax.x) {
-                dMin += sqr(offset.z - boxMax.z);
-            }
+            if (offset.z < boxMin.z) { dMin += sqr(offset.z - boxMin.z); } else
+            if (offset.x > boxMax.x) { dMin += sqr(offset.z - boxMax.z); }
 
             return dMin <= sqrRadius;
         };

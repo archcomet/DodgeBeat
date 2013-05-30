@@ -4,13 +4,20 @@
 
     global.DodgeBeat.Player = (function() {
 
-        var collisionSounds = {
+        var SCENE = DodgeBeat.CONFIG.SCENE,
+            collisionSounds = {
             names: [
             'firework1',
             'firework2',
             'firework3'
             ]
         };
+
+        /**
+         * Player
+         * @returns {*}
+         * @constructor
+         */
 
         function Player() {
             return Player.alloc(this, arguments);
@@ -33,6 +40,8 @@
             this.contact = false;
             this.enableControl = false;
             this.color = new THREE.Color();
+            this.boostColor = new THREE.Color();
+
             this.steering = new DodgeBeat.Steering({
                 position: this.position,
                 target: this.target,
@@ -44,11 +53,12 @@
 
             this.createLight()
                 .createSphere()
-                .setColor(0x88AAFF)
+                .setColor(new THREE.Color(0x88AAFF))
                 .createTail();
 
             DodgeBeat.audio.load(collisionSounds);
-            $(document.body).mousemove(this.mousemove.bind(this));
+            $(document.body).mousemove(this.onMouseMove.bind(this));
+            $(document.body).mousedown(this.onMouseDown.bind(this));
         };
 
         /**
@@ -57,7 +67,7 @@
          */
 
         Player.prototype.createLight = function () {
-            this.light = new THREE.PointLight(this.color.getHex(), 1, 600 );
+            this.light = new THREE.PointLight(this.color.getHex(), 1, 2000);
             this.light.position = this.position;
             this.parent.scene.add(this.light);
             return this;
@@ -142,12 +152,21 @@
                 var scatter, particle, shakeFactor = self.parent.camera.shakeFactor;
 
                 delay = delay !== undefined ? delay : 0;
-                scatter = 1 + shakeFactor * 50;
+                scatter = 1 + (shakeFactor * 50) * (1 + self.velocityRatio);
 
                 particle = vertices[index].copy(self.position);
-                particle.size = self.tailSize * (1 + shakeFactor * 10);
+                particle.size = self.tailSize * (1 + shakeFactor * 10) * (1 + self.velocityRatio);
                 particle.time = particle.duration = 1000;
-                particle.color.copy(self.color);
+
+                if (self.boostReady) {
+                    scatter *= 6;
+                    particle.color.copy(self.boostColor);
+                } else if (self.parent.boostFrames > 0) {
+                    particle.size *= 10;
+                    particle.color.copy(self.boostColor);
+                } else {
+                    particle.color.copy(self.color);
+                }
 
                 if (shakeFactor > 0) {
                     particle.color.r += (1.0 - particle.color.r) * shakeFactor;
@@ -206,11 +225,11 @@
          * Sets color of light, lines and particles.
          * Lines and particles have their lightness reduced.
          *
-         * @param value
+         * @param color
          */
 
-        Player.prototype.setColor = function (value) {
-            var hsl, color = new THREE.Color(value);
+        Player.prototype.setColor = function (color) {
+            var hsl;
             this.light.color.copy(color);
 
             hsl = color.getHSL();
@@ -218,6 +237,9 @@
 
             this.color.copy(color);
             this.lines[0].material.color.copy(color);
+
+            color.setHSL(hsl.h - 0.1, hsl.s, hsl.l);
+            this.boostColor.copy(color);
 
             return this;
         };
@@ -227,14 +249,20 @@
          * @param event
          */
 
-        Player.prototype.mousemove = function (event) {
+        Player.prototype.onMouseMove = function (event) {
             if (this.enableControl) {
-                var range = global.DodgeBeat.config.camera.range,
-                    x = (event.pageX - window.innerWidth * 0.5) / (window.innerWidth * 0.5),
+                var x = (event.pageX - window.innerWidth * 0.5) / (window.innerWidth * 0.5),
                     y = ((window.innerHeight - event.pageY) - window.innerHeight * 0.5) / (window.innerHeight * 0.5);
 
-                this.steering.target.x = x * range * 0.66;
-                this.steering.target.y = y * range * 0.66;
+                this.steering.target.x = x * SCENE.WIDTH * 0.66;
+                this.steering.target.y = y * SCENE.HEIGHT * 0.66;
+            }
+        };
+
+        Player.prototype.onMouseDown = function (event) {
+            if (this.enableControl && this.boostReady) {
+                this.parent.boostFrames = 600;
+                this.boostReady = false;
             }
         };
 
@@ -246,6 +274,8 @@
         Player.prototype.update = function (t) {
             this.steering.update(t);
             this.updateTarget();
+            this.updateSpeed();
+            this.updateBoostReady();
 
             this.lines[0].rotation.y += 0.01;
             this.lines[0].rotation.x += 0.01;
@@ -261,6 +291,14 @@
             }
         };
 
+        Player.prototype.updateSpeed = function () {
+            var kicks = this.parent.kicksSorted.length,
+                maxVelocity = (kicks * kicks) * this.parent.warpFactor;
+
+            this.velocityRatio = (this.parent.velocity / maxVelocity);
+            this.setColor(new THREE.Color().setHSL(0.75 - (this.velocityRatio / 4), 1, 0.7));
+        };
+
         Player.prototype.updateTarget = function () {
             if (this.parent.velocity === 0) {
                 this.target.z = 2500;
@@ -270,6 +308,12 @@
             if (!this.enableControl) {
                 this.target.x = 0;
                 this.target.y = 0;
+            }
+        };
+
+        Player.prototype.updateBoostReady = function () {
+            if (this.parent.boostFrames < -3000) {
+                this.boostReady = true;
             }
         };
 
@@ -309,7 +353,7 @@
 
             return new THREE.ShaderMaterial( {
                 uniforms: {
-                    texture: { type: "t", value: texture }
+                    texture: { type: 't', value: texture }
                 },
                 attributes: {
                     size: { type: 'f', value: [] },

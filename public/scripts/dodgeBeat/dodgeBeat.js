@@ -7,6 +7,71 @@
 
     global.DodgeBeat = (function () {
 
+        var CONFIG = {
+            CUBES: {
+                SIZE: 50,
+                COUNT: 500
+            },
+
+            PARTICLES: {
+                MAX_SIZE: 40,
+                COUNT: 1000
+            },
+
+            SCENE: {
+                ANTIALIAS: false,
+                FOG_COLOR: 0x000000,
+                FOG_RATE: 0.0005,
+                WIDTH: 1500,
+                HEIGHT: 1500,
+                LENGTH: 4000,
+                LIMIT: 2000
+            },
+
+            CAMERA: {
+                FOV: 75,
+                NEAR: 1,
+                FAR: -4000,
+                MAX_SPEED: 30,
+                SLOWING_DIST: 500,
+                OFFSET: 0.8,
+                SHAKE_FREQ_X: 40,
+                SHAKE_FREQ_Y: 20,
+                SHAKE_FREQ_Y2: 20,
+                SHAKE_SIZE_X: 30,
+                SHAKE_SIZE_Y: 15,
+                SHAKE_SIZE_Y2: 7
+            },
+
+            KICKS: {
+                peak: {
+                    frequency: [0, 90],
+                    threshold: 0.5,
+                    decay: 0.04
+                },
+                high: {
+                    frequency: [0, 200],
+                    threshold: 0.25,
+                    decay: 0.03
+                },
+                mid: {
+                    frequency: [0, 300],
+                    threshold: 0.05,
+                    decay: 0.02
+                },
+                low: {
+                    frequency: [0, 400],
+                    threshold: 0.005,
+                    decay: 0.002
+                },
+                faint: {
+                    frequency: [0, 500],
+                    threshold: 0.0001,
+                    decay: 0.005
+                }
+            }
+        };
+
         /**
          * Dodge Beat Constructor
          * @returns {*}
@@ -19,15 +84,19 @@
 
         Base.inherit(DodgeBeat);
 
+        DodgeBeat.CONFIG = CONFIG;
+
         /**
          * init
          * @returns {*}
          */
 
         DodgeBeat.prototype.init = function (parent) {
-            this.warpFactor = 1.5;
+            this.warpFactor = 1.7;
+            this.acceleration = 0.1;
             this.time = 0;
             this.velocity = 0;
+            this.boostFrames = 0;
             this.parent = parent;
 
             this.initScene()
@@ -47,14 +116,11 @@
          */
 
         DodgeBeat.prototype.initScene = function () {
-            var fogColor = DodgeBeat.config.scene.fogColor,
-                fogRate = DodgeBeat.config.scene.fogRate;
-
             this.scene = new THREE.Scene();
-            this.scene.fog = new THREE.FogExp2(fogColor, fogRate);
+            this.scene.fog = new THREE.FogExp2(CONFIG.SCENE.FOG_RATE, CONFIG.SCENE.FOG_RATE);
             this.camera = new DodgeBeat.Camera(this);
 
-            this.renderer = new THREE.WebGLRenderer({antialias: false });
+            this.renderer = new THREE.WebGLRenderer({antialias: CONFIG.SCENE.ANTIALIAS });
             $(document.body).prepend(this.renderer.domElement);
 
             $(window).resize(this.onWindowResize.bind(this));
@@ -85,7 +151,7 @@
          */
 
         DodgeBeat.prototype.initAudio = function () {
-            var key, kicksConfig = global.DodgeBeat.config.kicks;
+            var key, kicksConfig = CONFIG.KICKS;
 
             this.dancer = new Dancer();
             this.dancer.bind('loaded', this.onLoaded.bind(this));
@@ -260,6 +326,7 @@
             if (this.paused) { return; }
 
             this.time += 1000 / 60;
+            this.traveled += this.velocity;
 
             TWEEN.update(this.time);
             this.updateAudioKicks(t);
@@ -276,8 +343,6 @@
         };
 
         DodgeBeat.prototype.accelerate = function () {
-
-            console.log(this.targetVelocity);
 
             if (this.velocity > this.targetVelocity) {
                 this.velocity -= this.acceleration * (this.kickLevel - 1);
@@ -312,8 +377,10 @@
 
             kickLevel++;
 
+            this.kickLevelChanged = false;
             if (this.kickLevel !== kickLevel) {
                 this.kickLevel = kickLevel;
+                this.kickLevelChanged = true;
             }
         };
 
@@ -330,26 +397,49 @@
                     }
                     break;
 
-                // nth Main
+                // Main
                 default:
-                    if (this.player.contact) {
+                    if (this.player.contact && this.boostFrames <= 0) {
                         this.velocity = 2;
+                        this.boostFrames = 0;
+                        this.player.boostReady = false;
                     }
                     this.targetVelocity = (this.kickLevel * this.kickLevel) * this.warpFactor;
 
+                    this.acceleration = 0.1;
+                    if (this.boostFrames > 0) {
+                        this.targetVelocity *= 4;
+                        this.acceleration = 0.7;
+                    }
+
+                    this.boostFrames--;
+
                     this.accelerate();
+
+                    if (this.time > this.nextPhaseChange) {
+                        if (this.kickLevelChanged) {
+                            var nextPhase = Math.floor(Math.random() * 4) + 2;
+                            if (nextPhase === this.phase) {
+                                nextPhase++;
+                            }
+                            this.changePhase(nextPhase);
+                        }
+                    }
                     break;
             }
-
         };
 
         DodgeBeat.prototype.changePhase = function(phase) {
+            var phaseBefore = this.phase;
 
             switch(phase) {
                 // Pre-Flight
                 case 0:
+                    this.boostFrames = 0;
+                    this.traveled = 0;
                     this.velocity = 0;
                     this.player.enableControl = false;
+                    this.player.boostReady = false;
                     this.phase = phase;
                     break;
 
@@ -358,15 +448,56 @@
                     if (this.phase === 0) {
                         this.phase = phase;
                     }
+                    this.traveled = 0;
                     this.targetVelocity = 2;
-                    this.acceleration = 0.1;
                     break;
 
-                // Main
+                // Star Field
+                case 2:
+                    this.player.enableControl = true;
+                    this.phase = phase;
+                    break;
+
+                // Tunnel
+                case 3:
+                    this.r1 = Math.floor(Math.random() * 2000) + 1000;
+                    this.r2 = (Math.random() * 30) / 100 + 0.15;
+                    this.r3 = (Math.random() * 20) / 100 + 0.1;
+                    this.phase = phase;
+                    break;
+
+                // Funnel
+                case 4:
+                    this.r1 = Math.floor(Math.random() * 1000) + 500;
+                    this.r2 = (Math.random() * 30) / 100 + 0.1;
+                    this.r3 = (Math.random() * 20) / 100 + 0.2;
+                    this.r4 = (Math.random() * 20) / 100 + 0.1;
+                    this.phase = phase;
+                    break;
+
+                // Wave Plane
+                case 5:
+                    this.r1 = 8;
+                    this.r2 = 2;
+                    this.r3 = ((Math.random() * 2) / 10) + 0.2;
+                    this.r4 = (Math.random() * 1500) + 500;
+                    this.phase = phase;
+                    break;
+
                 default:
                     this.player.enableControl = true;
                     this.phase = phase;
                     break;
+
+            }
+
+            if (this.phase !== phaseBefore) {
+                console.log('Phase: ' + this.phase);
+                this.lastPhaseChange = this.time;
+                if (this.phase > 1) {
+                    this.lastPhaseChange = this.time;
+                    this.nextPhaseChange = this.time + Math.floor(Math.random() * 7000) + 7000;
+                }
             }
 
             return this;

@@ -4,6 +4,12 @@
 
     global.DodgeBeat.Steering = (function () {
 
+        /**
+         * Steering
+         * @param options
+         * @constructor
+         */
+
         function Steering (options) {
             Steering.alloc(this, arguments);
         }

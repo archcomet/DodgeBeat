@@ -91,6 +91,11 @@
 
     // Start server
     http.createServer(app).listen(port);
+
+    process.on('uncaughtException', function (err) {
+        console.log('[UncaughtException] ' + err);
+    });
+
     console.log('DodgeBeat server listening on port %d in %s mode', port, app.settings.env);
 
 }());

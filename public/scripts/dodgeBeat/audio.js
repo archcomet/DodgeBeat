@@ -8,6 +8,12 @@
             enabled = true,
             path = '/audio/';
 
+        /**
+         * AudioPool
+         * @param name
+         * @constructor
+         */
+
         function AudioPool(name) {
             this.audioPath = path + name + '.' + format;
 

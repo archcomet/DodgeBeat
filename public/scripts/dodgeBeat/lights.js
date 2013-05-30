@@ -2,10 +2,9 @@
 (function (global) {
     'use strict';
 
-    var THREE = global.THREE,
-        Visualizer = global.DodgeBeat.Visualizer;
-
     global.DodgeBeat.LightVisualizer = (function () {
+
+        var SCENE = DodgeBeat.CONFIG.SCENE;
 
         /**
          * LightVisualizer
@@ -13,11 +12,12 @@
          * @returns {*}
          * @constructor
          */
+
         function LightVisualizer(parent) {
             return LightVisualizer.alloc(this, arguments);
         }
 
-        Visualizer.inherit(LightVisualizer);
+        DodgeBeat.Visualizer.inherit(LightVisualizer);
 
         /**
          * init
@@ -25,9 +25,7 @@
          */
 
         LightVisualizer.prototype.init = function (parent) {
-            Visualizer.prototype.init.apply(this, arguments);
-
-            var depth = global.DodgeBeat.config.camera.depth;
+            DodgeBeat.Visualizer.prototype.init.apply(this, arguments);
 
             this.parent = parent;
             this.loadTextures();
@@ -38,7 +36,7 @@
                 l: 0.9,
                 x: 0,
                 y: 0,
-                z: depth * 1.1,
+                z: SCENE.LIMIT * 1.1,
                 maxIntensity: 0.52,
                 decay: 0.006
             });

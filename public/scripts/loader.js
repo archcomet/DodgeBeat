@@ -26,7 +26,6 @@
                     '/scripts/libs/dancer.min.js',
                     '/scripts/libs/base.js',
                     '/scripts/dodgeBeat/dodgeBeat.js',
-                    '/scripts/dodgeBeat/config.js',
                     '/scripts/dodgeBeat/visualizer.js',
                     '/scripts/dodgeBeat/cubes.js',
                     '/scripts/dodgeBeat/lights.js',
