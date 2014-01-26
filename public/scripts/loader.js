@@ -8,11 +8,13 @@
             '/scripts/libs/jquery.min.js',
             '/scripts/libs/can.custom.js',
             '/scripts/app/config.js',
-            '/scripts/app/site.js',
-            '/scripts/app/search.js',
-            '/scripts/app/track.js',
-            '/scripts/app/playing.js',
-            '/scripts/app/error.js',
+            '/scripts/app/trackModel.js',
+            '/scripts/app/siteControl.js',
+            '/scripts/app/pages/basePage.js',
+            '/scripts/app/pages/searchResultsPage.js',
+            '/scripts/app/pages/errorPage.js',
+
+//            '/scripts/app/selection.js',
             'css!styles.css'
         ],
         complete: function () {

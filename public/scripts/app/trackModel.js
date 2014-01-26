@@ -50,6 +50,7 @@
                     if (error) {
                         error(err);
                     }
+                    d.reject(err);
                     return;
                 }
 
@@ -61,6 +62,7 @@
                 }
 
                 modelList = new TrackModel.List(models);
+                modelList.q = params.q;
                 d.resolve(modelList);
 
                 if (success) {

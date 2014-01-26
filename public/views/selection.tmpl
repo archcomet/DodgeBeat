@@ -1,0 +1,21 @@
+<div class='selection'>
+    <div class='searchResultItem' data-index='{{index}}'>
+        <div class='left'>
+            <img {{#artwork_url}}src="{{.}}"{{/artwork_url}}
+                 {{^artwork_url}}src="/images/missing_artwork.png"{{/artwork_url}}/>
+        </div>
+        <div>
+            <h4><a href="{{permalink_url}}" target="_blank">{{title}}</a></h4>
+            <h5><a href="{{user.permalink_url}}" target="_blank">{{user.username}}</a></h5>
+        </div>
+
+        {{#results}}
+        <div class='results'>
+            <span>Score: {{.score}}</span>
+            <span>Distance: {{.distance}}</span>
+        </div>
+        {{/results}}
+
+        <button class='start' type='button'>Start!</button>
+    </div>
+</div>

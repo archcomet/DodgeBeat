@@ -1,14 +1,19 @@
 <div class="searchResults">
-    {{#each tracks}}
-        <div class="searchResultItem" data-index="{{index}}">
-            <div class="left">
-                <img {{#artwork_url}}src="{{.}}"{{/artwork_url}}
-                     {{^artwork_url}}src="/images/missing_artwork.png"{{/artwork_url}}/>
+    {{#list.length}}
+        {{#each list}}
+            <div class="searchResultItem" data-index="{{index}}">
+                <div class="left">
+                    <img {{#artwork_url}}src="{{.}}"{{/artwork_url}}
+                         {{^artwork_url}}src="/images/missing_artwork.png"{{/artwork_url}}/>
+                </div>
+                <div>
+                    <h4>{{title}}</h4>
+                    <h5>{{user.username}}</h5>
+                </div>
             </div>
-            <div>
-                <h4>{{title}}</h4>
-                <h5>{{user.username}}</h5>
-            </div>
-        </div>
-    {{/each}}
+        {{/each}}
+    {{/#list.length}}
+    {{^list.length}}
+        Could not find a match on SoundCloud for "{{list.q}}". Try a different search!
+    {{/list.length}}
 </div>

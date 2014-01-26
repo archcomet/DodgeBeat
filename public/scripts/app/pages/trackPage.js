@@ -5,13 +5,16 @@
 
     global.app = global.app || {};
 
-    global.app.ErrorControl = can.Control({
+    global.app.SelectionControl = can.Control({
         init: function (element, options) {
-            this.view = can.view('views/error.tmpl', {
-                error: options.error
-            });
+            this.view = can.view('views/selection.tmpl', options.track);
             this.element.hide().html(this.view).fadeIn();
+        },
+
+        'button.start click': function (elem) {
+
         }
+
     });
 
 }(this));
